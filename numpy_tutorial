@@ -1,0 +1,13 @@
+In Numpy dimensions are called axes. The number of axes is rank.(This concept really fucks the dog.. A better, or a smoother concept should be like this: The dimension doesn't refer to the dimension of the data point. Instead, it refers to the dimension of an array/grid. For example, [1, 2, 1] represents a point in 3D space. The dimension of the data point is 3. But it's represented in a single array, like vector<int> in c++. Thus, the dimension of the array [1, 2, 1] is 1. Its length is 3. Similiarly,
+            [[ 1., 0., 0.],
+             [ 0., 1., 2.]]
+has dimension 2. The first dimension has length 2. Like vector< vector<int> > vii. vii[0].size() = 2.)
+
+Mutable objects copy:
+There are three cases when it comes to copy mutable objects(i.e. list, dictionary, string).
+    1. No Copy at All
+        Simple assignments make no copy of mutable objects. Simple assignments include 1)assignment, namely a = b; 2) pass as parameters to function(i.e. pass as reference). Feels like 'reference' object in c++.
+    2. View or Shallow copy
+        This case is a little nasty. It creates a new different object (known as view), but pointing to the same memory shared by the original data. Feels like pointer in c++. But whenever we refer to the pointer, it's dereferenced automatically. One common appearance of this case is slicing an array.
+    3. Deep copy
+        Called manually by user using copy() function. For example, b = a.copy().
