@@ -5,7 +5,7 @@ Created on Wed Jul  6 11:05:12 2016
 @author: yangzhao
 
 This file is a detailed implementation of HMM described in PRML. THe files
-contains three modules: 
+contains three modules:
     1. data generation
     2. K-means for preprocess parameter selection
     3. Alpha-Beta algorithm for learning parameters.
@@ -82,7 +82,7 @@ _A, _pi = helpers.init(numComponent)
 
 # E Step
 # compute alpha
-helpers.E_Step(X, _mean, _cov, _A, _pi)
+alpha = helpers.E_Step(X, _mean, _cov, _A, _pi)
 
 
 # S Step

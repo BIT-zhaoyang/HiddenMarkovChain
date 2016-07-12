@@ -19,39 +19,49 @@ def estimateCov(X, mean, assign):
         _X = X[assign[:, i] == 1]
         diff = _X - mean[i]
         cov[i] = diff.T.dot(diff) / nEleInCluster[i]
-    
+
     return cov
-    
+
 def init(numComponent):
     _A = np.random.random((numComponent, numComponent))
     row_sum = _A.sum(axis=1);
     _A = _A / row_sum[:, newaxis]
-    
+
     _pi = np.random.random((numComponent))
-    _pi = _pi / _pi.sum()    
-    
+    _pi = _pi / _pi.sum()
+
     return _A, _pi
-    
+
 def E_Step(X, _mean, _cov, _A, _pi):
     numPoint = X.shape[0]
     numComponent = _pi.shape[0]
-    
-    # compute multiGaussian.pdf(X, numComponent) at once which will save some computation    
+
+    # compute multiGaussian.pdf(X, numComponent) at once which will save some computation
     pdf = np.zeros((numPoint, numComponent))
     for i in range(numPoint):
         for j in range(numComponent):
             pdf[i][j] = multiGaussian.pdf(X[i], mean=_mean[j], cov=_cov[j])
-    
+
     # compute alpha
     alpha = np.zeros((numPoint, numComponent))
-    alpha[0] = pdf[0] * _pi  # compute starting condition alpha[0]    
+    alpha[0] = pdf[0] * _pi  # compute starting condition alpha[0]
+    scaling = alpha[0].sum()  # scaling alpha[i]'s for numerical stability
+    alpha[0] /= scaling
     for i in range(1, numPoint):    # compute rest alpha
-        alpha[i] = (pdf[i] * alpha[i-1]).dot(_A)
-    
+        alpha[i] = pdf[i] * (alpha[i-1].dot(_A))
+        scaling = alpha[i].sum()
+        alpha[i] /= scaling
+
     # compute beta
     beta = np.ones((numPoint, numComponent))
     for i in range(numPoint-2, -1, -1):
         beta[i] = (beta[i+1]*pdf[i+1]).dot(_A.T)
+
+    # compute incomplete likelihood p(X)
+    pX = alpha[-1].sum
     
-    # compute gamma(z)
+    # # compute gamma(z_{n-1}, z_{n})
+    # gamma = np.zeros((numPoint-1, numComponent, numComponent))
+    # for i in range(numPoint-1):
     
+    return alpha
