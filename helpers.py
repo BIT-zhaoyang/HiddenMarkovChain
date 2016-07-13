@@ -36,32 +36,72 @@ def E_Step(X, _mean, _cov, _A, _pi):
     numPoint = X.shape[0]
     numComponent = _pi.shape[0]
 
-    # compute multiGaussian.pdf(X, numComponent) at once which will save some computation
+    ## compute multiGaussian.pdf(X, numComponent) at once which will save some computation
     pdf = np.zeros((numPoint, numComponent))
     for i in range(numPoint):
         for j in range(numComponent):
             pdf[i][j] = multiGaussian.pdf(X[i], mean=_mean[j], cov=_cov[j])
 
-    # compute alpha
+    ## we use rescaling technique in E-Step
+    scaling = np.zeros(numPoint)
+
+    ## compute alpha
     alpha = np.zeros((numPoint, numComponent))
     alpha[0] = pdf[0] * _pi  # compute starting condition alpha[0]
-    scaling = alpha[0].sum()  # scaling alpha[i]'s for numerical stability
-    alpha[0] /= scaling
+    scaling[0] = alpha[0].sum()  # scaling alpha[i]'s for numerical stability
+    alpha[0] /= scaling[0]
     for i in range(1, numPoint):    # compute rest alpha
         alpha[i] = pdf[i] * (alpha[i-1].dot(_A))
-        scaling = alpha[i].sum()
-        alpha[i] /= scaling
+        scaling[i] = alpha[i].sum()
+        alpha[i] /= scaling[i]
 
-    # compute beta
+    ## compute beta
     beta = np.ones((numPoint, numComponent))
     for i in range(numPoint-2, -1, -1):
         beta[i] = (beta[i+1]*pdf[i+1]).dot(_A.T)
+        beta[i] /= scaling[i+1]
 
-    # compute incomplete likelihood p(X)
-    pX = alpha[-1].sum
+#    ## compute incomplete likelihood p(X)
+#    pX = 1
+#    for i in range(numPoint):
+#        pX *= scaling[i]
+
+    ## compute gamma(z_n)
+    gamma = alpha * beta
+    # normalize gamma for numerical stability
+    gamma /= gamma.sum(axis=1)[:, newaxis]
+
+    ## compute epsilon(z_{n-1}, z_n)
+    epsilon = np.zeros((numPoint-1, numComponent, numComponent))
+    for i in range(numPoint-1):
+        epsilon[i] = alpha[i].dot((beta[i+1]*pdf[i+1]).T) * (_A / scaling[i+1])
+        
+    return gamma, epsilon
+
+def M_Step(X, gamma, epsilon):
+    numPoint, numDim = X.shape
+    numComponent = gamma.shape[1]
     
-    # # compute gamma(z_{n-1}, z_{n})
-    # gamma = np.zeros((numPoint-1, numComponent, numComponent))
-    # for i in range(numPoint-1):
+    ## compute _pi
+    _pi = gamma[0]
     
-    return alpha
+    ## compute _A
+    numerator = epsilon.sum(axis=0)  # compute numerator
+    denominator = numerator.sum(axis=1)  # compute denominator 
+    _A = numerator / denominator[:, newaxis]
+    
+    ## compute denominator in _mean and _cov
+    denominator = gamma.sum(axis=0)
+    
+    ## compute _mean
+    numerator = (gamma.T).dot(X)
+    _mean = numerator / denominator[:, newaxis]
+    
+    ## compute _cov
+    _cov = np.zeros((numComponent, numDim, numDim))
+    for i in range(numComponent):
+        numer1 = X - _mean[0]
+        numer2 = gamma[:, 0][:, newaxis] * numer1
+        _cov[i] = numer1.T.dot(numer2) / denominator[i]
+    
+    return _mean, _cov, _A, _pi
