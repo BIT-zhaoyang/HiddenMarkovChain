@@ -61,11 +61,6 @@ def E_Step(X, _mean, _cov, _A, _pi):
         beta[i] = (beta[i+1]*pdf[i+1]).dot(_A.T)
         beta[i] /= scaling[i+1]
 
-#    ## compute incomplete likelihood p(X)
-#    pX = 1
-#    for i in range(numPoint):
-#        pX *= scaling[i]
-
     ## compute gamma(z_n)
     gamma = alpha * beta
     # normalize gamma for numerical stability
@@ -74,34 +69,34 @@ def E_Step(X, _mean, _cov, _A, _pi):
     ## compute epsilon(z_{n-1}, z_n)
     epsilon = np.zeros((numPoint-1, numComponent, numComponent))
     for i in range(numPoint-1):
-        epsilon[i] = alpha[i].dot((beta[i+1]*pdf[i+1]).T) * (_A / scaling[i+1])
-        
+        epsilon[i] = (alpha[i][:, newaxis] * _A) * pdf[i+1] * beta[i+1] / scaling[i+1]
+
     return gamma, epsilon
 
 def M_Step(X, gamma, epsilon):
     numPoint, numDim = X.shape
     numComponent = gamma.shape[1]
-    
+
     ## compute _pi
     _pi = gamma[0]
-    
+
     ## compute _A
     numerator = epsilon.sum(axis=0)  # compute numerator
-    denominator = numerator.sum(axis=1)  # compute denominator 
+    denominator = numerator.sum(axis=1)  # compute denominator
     _A = numerator / denominator[:, newaxis]
-    
+
     ## compute denominator in _mean and _cov
     denominator = gamma.sum(axis=0)
-    
+
     ## compute _mean
     numerator = (gamma.T).dot(X)
     _mean = numerator / denominator[:, newaxis]
-    
+
     ## compute _cov
     _cov = np.zeros((numComponent, numDim, numDim))
     for i in range(numComponent):
-        numer1 = X - _mean[0]
-        numer2 = gamma[:, 0][:, newaxis] * numer1
+        numer1 = X - _mean[i]
+        numer2 = gamma[:, i][:, newaxis] * numer1
         _cov[i] = numer1.T.dot(numer2) / denominator[i]
-    
+
     return _mean, _cov, _A, _pi

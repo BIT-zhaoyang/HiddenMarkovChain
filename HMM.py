@@ -80,13 +80,13 @@ plt.title("Clustering Result by K-Means")
 # initialize parameters
 _A, _pi = helpers.init(numComponent)
 
-for nIter in range(1, 51):
+for nIter in range(1, 21):
     # E Step
-    gamma, epsilon = helpers.E_Step(X, _mean, _cov, _A, _pi)    
-    
+    gamma, epsilon = helpers.E_Step(X, _mean, _cov, _A, _pi)
+
     # M Step
     _mean, _cov, _A, _pi = helpers.M_Step(X, gamma, epsilon)
-    
+
     # plot intermediate result
     if(nIter % 5 == 0):
         plt.figure()
@@ -94,7 +94,7 @@ for nIter in range(1, 51):
         plt.scatter(_mean[:, 0], _mean[:, 1], s = 40, color = 'y', marker = 'D')
         plt.title("Result return by HMM after " + str(nIter) + " iterations")
         plt.show()
-        
+
 #        print(_mean)
 
 ## compare prediction vs ground label
